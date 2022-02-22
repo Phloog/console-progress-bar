@@ -1,10 +1,10 @@
-﻿namespace AaronLuna.ConsoleProgressBar
-{
-    using System;
-    using System.Linq;
-    using System.Text;
-    using System.Threading;
+﻿using System;
+using System.Linq;
+using System.Text;
+using System.Threading;
 
+namespace AaronLuna.ConsoleProgressBar
+{
     public class ConsoleProgressBar : IDisposable, IProgress<double>
     {
         private readonly TimeSpan _animationInterval = TimeSpan.FromSeconds(1.0 / 8);
@@ -15,6 +15,8 @@
         internal bool Disposed;
 
         internal Timer Timer;
+
+        internal DateTime StartTime;
 
         public ConsoleProgressBar()
         {
@@ -47,6 +49,8 @@
         public string AnimationSequence { get; set; }
         public bool DisplayBar { get; set; }
         public bool DisplayPercentComplete { get; set; }
+        public bool DisplayRunTime { get; set; }
+        public bool DisplayETA { get; set; }
         public bool DisplayAnimation { get; set; }
 
         public void Dispose()
@@ -60,6 +64,9 @@
             // Make sure value is in [0..1] range
             value = Math.Max(0, Math.Min(1, value));
             Interlocked.Exchange(ref CurrentProgress, value);
+
+            if (value < .001 || value > .999)
+                StartTime = DateTime.Now;
         }
 
         private void TimerHandler(object state)
@@ -88,9 +95,33 @@
                     string.Empty,
                     (current, _) => current + IncompleteBlock);
 
-            var progressBar = $"{StartBracket}{completedBlocks}{incompleteBlocks}{EndBracket}";
+            var progressBar =
+                $"{StartBracket}{completedBlocks}{incompleteBlocks}{EndBracket}";
             var percent = $"{currentProgress:P0}".PadLeft(4, '\u00a0');
-            var animationFrame = AnimationSequence[AnimationIndex++ % AnimationSequence.Length];
+
+            var runtimeTimespan = DateTime.Now - StartTime;
+            var runtime = string.Empty;
+            if (DisplayRunTime && currentProgress > 0 && currentProgress < 1)
+            {
+                runtime = $"{runtimeTimespan:h\\:mm\\:ss\\.f}";
+                if (runtime.StartsWith("00:")) runtime = runtime.Substring(3);
+                if (runtime.StartsWith("0:")) runtime = runtime.Substring(2);
+                runtime = singleSpace + runtime;
+            }
+
+            var eta = string.Empty;
+            if (DisplayETA && currentProgress > 0 && currentProgress < 1)
+            {
+                var secondsPerPercent = currentProgress > 0 ? runtimeTimespan.TotalSeconds / currentProgress : 0;
+                var estimate = new TimeSpan(0, 0, (int)((1.0 - currentProgress) * secondsPerPercent));
+                eta = $"{estimate:h\\:mm\\:ss}";
+                if (eta.StartsWith("00:")) eta = eta.Substring(3);
+                if (eta.StartsWith("0:")) eta = eta.Substring(2);
+                eta = $" ({eta} left)";
+            }
+            
+            var animationFrame =
+                AnimationSequence[AnimationIndex++ % AnimationSequence.Length];
             var animation = $"{animationFrame}";
 
             progressBar = DisplayBar
@@ -106,7 +137,7 @@
                 animation = string.Empty;
             }
 
-            return (progressBar + percent + animation).TrimEnd();
+            return (progressBar + percent + animation + runtime + eta).TrimEnd();
         }
 
         internal void UpdateText(string text)
@@ -114,7 +145,8 @@
             // Get length of common portion
             var commonPrefixLength = 0;
             var commonLength = Math.Min(_currentText.Length, text.Length);
-            while (commonPrefixLength < commonLength && text[commonPrefixLength] == _currentText[commonPrefixLength])
+            while (commonPrefixLength < commonLength && text[commonPrefixLength] ==
+                   _currentText[commonPrefixLength])
                 commonPrefixLength++;
 
             // Backtrack to the first differing character
@@ -132,7 +164,6 @@
                 outputBuilder.Append('\b', overlapCount);
             }
 
-            //Console.Write($"{Caption}{outputBuilder}");
             Console.Write(outputBuilder);
             _currentText = text;
         }

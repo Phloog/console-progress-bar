@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using AaronLuna.Common.IO;
 using AaronLuna.ConsoleProgressBar;
 
 namespace TestConsole
@@ -22,7 +21,7 @@ namespace TestConsole
 
         private static async Task ConsoleProgressBars()
         {
-            var pb1 = new ConsoleProgressBar();
+            var pb1 = new ConsoleProgressBar { DisplayRunTime = true, DisplayETA = true };
             await TestProgressBar(pb1, 1);
 
             var pb2 = new ConsoleProgressBar
@@ -32,14 +31,18 @@ namespace TestConsole
                 EndBracket = string.Empty,
                 CompletedBlock = "\u2022",
                 IncompleteBlock = "·",
-                AnimationSequence = ProgressAnimations.RotatingPipe
+                AnimationSequence = ProgressAnimations.RotatingPipe,
+                DisplayRunTime = true,
+                DisplayETA = true
             };
             await TestProgressBar(pb2, 2);
 
             var pb3 = new ConsoleProgressBar
             {
                 DisplayBar = false,
-                AnimationSequence = ProgressAnimations.RotatingTriangle
+                AnimationSequence = ProgressAnimations.RotatingTriangle,
+                DisplayRunTime = true,
+                DisplayETA = true
             };
             await TestProgressBar(pb3, 3);
         }
@@ -49,9 +52,9 @@ namespace TestConsole
             Console.Write($"{num}. Performing some task... ");
             using (progress)
             {
-                for (var i = 0; i <= 150; i++)
+                for (var i = 0; i <= 1500; i++)
                 {
-                    progress.Report((double) i / 150);
+                    progress.Report((double) i / 1500);
                     await Task.Delay(20);
                 }
 
@@ -64,7 +67,7 @@ namespace TestConsole
 
         private static async Task FileTransferProgressBars()
         {
-            const long fileSize = (long) (8 * FileHelper.OneKB);
+            const long fileSize = (long) (8 * 1024);
             var pb4 = new FileTransferProgressBar(fileSize, TimeSpan.FromSeconds(5))
             {
                 NumberOfBlocks = 15,
@@ -76,7 +79,7 @@ namespace TestConsole
             };
             await TestFileTransferProgressBar(pb4, fileSize, 4);
 
-            const long fileSize2 = (long) (100 * 36 * FileHelper.OneMB);
+            const long fileSize2 = (long) ((long)100 * 36 * 1024 * 1024);
             var pb5 = new FileTransferProgressBar(fileSize2, TimeSpan.FromSeconds(5))
             {
                 DisplayBar = false,

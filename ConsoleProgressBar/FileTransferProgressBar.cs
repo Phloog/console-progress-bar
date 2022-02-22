@@ -1,13 +1,12 @@
-﻿namespace AaronLuna.ConsoleProgressBar
-{
-	using System;
-	using System.Linq;
-	using System.Threading;
-	using Common.IO;
+﻿using System;
+using System.Linq;
+using System.Threading;
 
+namespace AaronLuna.ConsoleProgressBar
+{
 	public class FileTransferProgressBar : ConsoleProgressBar
 	{
-	long _lastReportTicks;
+        private long _lastReportTicks;
 
 	public FileTransferProgressBar(long fileSizeInBytes, TimeSpan timeout)
 	{
@@ -46,7 +45,7 @@
 			Interlocked.Exchange(ref CurrentProgress, value);
 		}
 
-	void TimerHandler(object state)
+        private void TimerHandler(object state)
 		{
 			lock (Timer)
 			{
@@ -68,7 +67,7 @@
 			}
 		}
 
-	string GetProgressBarText(double currentProgress)
+        private string GetProgressBarText(double currentProgress)
 		{
 			const string singleSpace = " ";
 
@@ -84,15 +83,18 @@
 					string.Empty,
 					(current, _) => current + IncompleteBlock);
 
-			var progressBar = $"{StartBracket}{completedBlocks}{incompleteBlocks}{EndBracket}";
+            var progressBar =
+                $"{StartBracket}{completedBlocks}{incompleteBlocks}{EndBracket}";
 			var percent = $"{currentProgress:P0}".PadLeft(4, '\u00a0');
 
-			var fileSizeInBytes = FileHelper.FileSizeToString(FileSizeInBytes);
+            var fileSizeInBytes = FileSizeToString(FileSizeInBytes);
 			var padLength = fileSizeInBytes.Length;
-			var bytesReceived = FileHelper.FileSizeToString(BytesReceived).PadLeft(padLength, '\u00a0');
+            var bytesReceived = FileSizeToString(BytesReceived)
+                .PadLeft(padLength, '\u00a0');
 			var bytes = $"{bytesReceived} of {fileSizeInBytes}";
 
-			var animationFrame = AnimationSequence[AnimationIndex++ % AnimationSequence.Length];
+            var animationFrame =
+                AnimationSequence[AnimationIndex++ % AnimationSequence.Length];
 			var animation = $"{animationFrame}";
 
 		    progressBar = DisplayBar
@@ -114,5 +116,17 @@
 
 			return progressBar + bytes + percent + animation;
 		}
+
+        // not worthwhile referencing a DLL for just this one method
+        public static string FileSizeToString(long fileSizeInBytes)
+        {
+            if ((double) fileSizeInBytes > 1073741824.0)
+                return $"{(object) ((double) fileSizeInBytes / 1073741824.0):F2} GB";
+            return (double) fileSizeInBytes > 1048576.0
+                ? $"{(object) ((double) fileSizeInBytes / 1048576.0):F2} MB"
+                : ((double) fileSizeInBytes > 1024.0
+                    ? $"{(object) ((double) fileSizeInBytes / 1024.0):F2} KB"
+                    : $"{(object) fileSizeInBytes} bytes");
+        }
 	}
 }
