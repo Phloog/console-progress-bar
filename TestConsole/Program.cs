@@ -21,7 +21,7 @@ namespace TestConsole
 
         private static async Task ConsoleProgressBars()
         {
-            var pb1 = new ConsoleProgressBar { DisplayRunTime = true, DisplayETA = true };
+            var pb1 = new ConsoleProgressBar { DisplayRunTime = true, DisplayETA = true, RedrawWholeBar = true };
             await TestProgressBar(pb1, 1);
 
             var pb2 = new ConsoleProgressBar
@@ -33,7 +33,8 @@ namespace TestConsole
                 IncompleteBlock = "·",
                 AnimationSequence = ProgressAnimations.RotatingPipe,
                 DisplayRunTime = true,
-                DisplayETA = true
+                DisplayETA = true,
+                RedrawWholeBar = true
             };
             await TestProgressBar(pb2, 2);
 
@@ -42,7 +43,8 @@ namespace TestConsole
                 DisplayBar = false,
                 AnimationSequence = ProgressAnimations.RotatingTriangle,
                 DisplayRunTime = true,
-                DisplayETA = true
+                DisplayETA = true,
+                RedrawWholeBar = true
             };
             await TestProgressBar(pb3, 3);
         }
@@ -50,11 +52,12 @@ namespace TestConsole
         private static async Task TestProgressBar(ConsoleProgressBar progress, int num)
         {
             Console.Write($"{num}. Performing some task... ");
-            using (progress)
+            using (progress.Start())
             {
-                for (var i = 0; i <= 1500; i++)
+                const int total = 300;
+                for (var i = 0; i <= total; i++)
                 {
-                    progress.Report((double) i / 1500);
+                    progress.Report((double) i / total);
                     await Task.Delay(20);
                 }
 
@@ -75,7 +78,8 @@ namespace TestConsole
                 EndBracket = "|",
                 CompletedBlock = "|",
                 IncompleteBlock = "\u00a0",
-                AnimationSequence = ProgressAnimations.PulsingLine
+                AnimationSequence = ProgressAnimations.PulsingLine,
+                RedrawWholeBar = true
             };
             await TestFileTransferProgressBar(pb4, fileSize, 4);
 
@@ -83,7 +87,8 @@ namespace TestConsole
             var pb5 = new FileTransferProgressBar(fileSize2, TimeSpan.FromSeconds(5))
             {
                 DisplayBar = false,
-                DisplayAnimation = false
+                DisplayAnimation = false,
+                RedrawWholeBar = true
             };
             pb5.FileTransferStalled += HandleFileTransferStalled;
             await TestFileTransferStalled(pb5, fileSize2, 5);
@@ -92,7 +97,7 @@ namespace TestConsole
         private static async Task TestFileTransferProgressBar(FileTransferProgressBar progress, long fileSize, int num)
         {
             Console.Write($"{num}. File transfer in progress... ");
-            using (progress)
+            using (progress.Start())
             {
                 for (var i = 0; i <= 150; i++)
                 {
@@ -112,7 +117,7 @@ namespace TestConsole
         private static async Task TestFileTransferStalled(FileTransferProgressBar progress, long fileSize, int num)
         {
             Console.Write($"{num}. File transfer in progress... ");
-            using (progress)
+            using (progress.Start())
             {
                 for (var i = 0; i <= 110; i++)
                 {

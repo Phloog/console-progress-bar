@@ -33,6 +33,8 @@ namespace AaronLuna.ConsoleProgressBar
             DisplayPercentComplete = true;
             DisplayAnimation = true;
 
+            Column = Console.CursorLeft;
+
             Timer = new Timer(TimerHandler);
 
             // A progress bar is only for temporary display in a console window.
@@ -40,6 +42,9 @@ namespace AaronLuna.ConsoleProgressBar
             // Otherwise, we'll end up with a lot of garbage in the target file.
             if (!Console.IsOutputRedirected) ResetTimer();
         }
+
+        public bool RedrawWholeBar { get; set; }
+        public int Column { get; set; }
 
         public int NumberOfBlocks { get; set; }
         public string StartBracket { get; set; }
@@ -53,10 +58,20 @@ namespace AaronLuna.ConsoleProgressBar
         public bool DisplayETA { get; set; }
         public bool DisplayAnimation { get; set; }
 
+        public ConsoleColor ForegroundColor { get; set; } = ConsoleColor.White;
+
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public ConsoleProgressBar Start(bool inline = true)
+        {
+            if (inline)
+                Column = Console.CursorLeft;
+
+            return this;
         }
 
         public void Report(double value)
@@ -158,13 +173,34 @@ namespace AaronLuna.ConsoleProgressBar
 
             // If the new text is shorter than the old one: delete overlapping characters
             var overlapCount = _currentText.Length - text.Length;
-            if (overlapCount > 0)
+
+            var oldcolor = Console.ForegroundColor;
+            Console.ForegroundColor = ForegroundColor;
+            
+            if (RedrawWholeBar)
             {
-                outputBuilder.Append(' ', overlapCount);
-                outputBuilder.Append('\b', overlapCount);
+                Console.SetCursorPosition(Column, Console.CursorTop);
+                Console.Write(text);
+
+                if (overlapCount > 0)
+                {
+                    Console.Write(new string(' ', overlapCount));
+                    Console.Write(new string('\b', overlapCount));
+                }
+
+            }
+            else
+            {
+                if (overlapCount > 0)
+                {
+                    outputBuilder.Append(' ', overlapCount);
+                    outputBuilder.Append('\b', overlapCount);
+                }
+
+                Console.Write(outputBuilder);
             }
 
-            Console.Write(outputBuilder);
+            Console.ForegroundColor = oldcolor;
             _currentText = text;
         }
 
